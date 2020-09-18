@@ -4,3 +4,5 @@
 1600447848328:head(data(teal))
 1600447855589:head(teal)
 1600447859000:plot(teal)
+1600450524025:install.packages('lme4')
+1600451265408:q()
