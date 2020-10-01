@@ -26,6 +26,10 @@ This repository creates a reproducible environment to run visual modeling analys
 #### R packages
 - If you need to temporarily use packages that are not already available in the Docker container, use the ```install.packages()``` function in R to install the package from source. There my be cases where packages cannot install properly because of missing or broken dependencies. In such cases, look up the package in the [Rstudio package manager](https://packagemanager.rstudio.com/client/#/repos/1/packages/A3) and set the client OS to Ubuntu 20.04 to see if the desired package has dependencies that need to be installed for its use. If you would like to permanently include packages, then modify the [Dockerfile](https://github.com/aluro2/docker_visual_modeling/blob/master/Dockerfile) to include installation of the desired packages and their dependencies to the **visual_modeling_rstudio** Docker image.
 
+#### Keeping the repository updated
+
+run ```git pull`` to keep up to date files and scripts from GitHub main repo
+
 #### Helpful docs and tutorials
 - [Docker environments for RStudio](https://environments.rstudio.com/docker) 
 - [R Docker Tutorial](http://ropenscilabs.github.io/r-docker-tutorial/)
