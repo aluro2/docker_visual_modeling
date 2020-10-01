@@ -11,7 +11,7 @@ This repository creates a reproducible environment to run visual modeling analys
 ```git clone https://github.com/aluro2/docker_visual_modeling```
 
 ### Building and running the Docker image and container
-- Once the repo is cloned to your system, open a terminal, change into the directory of the repository, and run the *bash_scripts/build_and_run_docker_rstudio.sh* script to build the Docker image **visual_modeling_rstudio**, and run the docker container **visual_modeling_container**.
+- Once the repo is cloned to your system, open a terminal, change into the directory of the repository, and run the *bash_scripts/build_and_run_docker_rstudio.sh* script to build the Docker image **visual_modeling_rstudio**, and run the docker container **visual_modeling_container**. (If you are running Docker on Mac or Windows, open the Docker application before running the build and run script)
 
 ```bash bash_scripts/build_and_run_docker_rstudio.sh```
 
@@ -28,9 +28,15 @@ This repository creates a reproducible environment to run visual modeling analys
 
 #### Keeping the repository updated
 
-run ```git pull`` to keep up to date files and scripts from GitHub main repo
+run ```git pull``` to keep up to date files and scripts from GitHub main repo
 
-#### Helpful docs and tutorials
+## Using the examples to practice visual modeling analysis
+1. Once the container is active and running, open the RStudio instance in your web browser and open the directory *example_murreegg_analysis* in the RStudio Files panel
+2. Next, open *example_murreegg_analysis.Rproj* to enter the example R project
+3. Open example_murreegg_analysis/Rscripts to see the available R scripts
+4. Run scripts by the order of their names--e.g., *01_import_and_clean_egg_spectra.R*, then *02_model_egg_JNDs.R*...
+
+## Helpful docs and tutorials
 - [Docker environments for RStudio](https://environments.rstudio.com/docker) 
 - [R Docker Tutorial](http://ropenscilabs.github.io/r-docker-tutorial/)
 - [pavo package R (note that we use version 2.4, so may not be up to date)](http://pavo.colrverse.com/articles/pavo-1-overview.html)
