@@ -28,5 +28,8 @@
     "save_workspace": "never",
     "load_workspace": false,
     "always_save_history": false,
-    "posix_terminal_shell": "bash"
+    "posix_terminal_shell": "bash",
+    "restore_source_documents": false,
+    "restore_last_project": false,
+    "editor_theme": "Dracula"
 }
