@@ -3,9 +3,13 @@ title: "Receptor-noise limited modeling and JND-XYZ plotting"
 author: Alec Luro
 date: October 6, 2020
 output:
-  prettydoc::html_pretty:
-    theme: leonids
-    highlight: github
+  html_document:
+    theme: simplex
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    toc_float: false
+    number_sections: true
 ---
 ```{r setup_chunk, echo=FALSE}
 
@@ -20,7 +24,7 @@ All scripts are available in the *R_scripts* directory. Scripts should be run in
 
 As you will see, I use a mix of direct inputs (e.g. ```object_A <- function_A(x)```, and then ```object_B <- function_B(object_A)```) and pipes ```object_B <- x %>% function_A(.) %>% function_B(.)``` throughout. Pipes can be convenient as they reduce the number of objects saved into the global environment by skipping through intermediate outputs and returning only the output generated following the last pipe. The object send by the pipe can be indicated using a period placeholder ```.``` but may also lack any placeholder at all as the pipe will always send the object to the next function's object input.
 
-# R_scripts/01_import_and_clean_egg_spectra.R
+# R_scripts/01_import_and_clean_egg_spectra.R {.tabset .tabset-fade }
 This script imports the raw reflectance data, processes it, and saves it. The plot is added here in the notebook to demonstrate how to make a basic spectral reflectance plot.
 
 ## Load packages and import the reflectance data
@@ -62,7 +66,7 @@ write_csv(
 )
 ```
 
-# R_scripts/02A_model_egg_JNDs.R
+# R_scripts/02A_model_egg_JNDs.R {.tabset .tabset-fade }
 This script takes the cleaned murre egg reflectance data, subsets only spectra taken of egg backgrounds, coverts it to cone catch data using the peafowl visual system using ```vismodel()```, calculates Just-noticeable differences (JNDs) using ```coldist()```, coverts the JND values into relative coordinates amongst all egg backgrounds using ```jnd2xyz()```, and plots the JND-XYZ coordinates.
 
 ## Import cleaned murre egg reflectance data from "data/" directory
@@ -207,7 +211,7 @@ egg_background_JNDXYZ %>%
 
 ```
 
-# R_scripts/02B_model_egg_JNDs.R
+# R_scripts/02B_model_egg_JNDs.R {.tabset .tabset-fade }
 This script takes the cleaned murre egg reflectance data, splits egg background and egg spotting reflectance spectra into two items of a list, coverts them to cone catch data using the peafowl visual system using ```vismodel()```, calculates Just-noticeable differences (JNDs) using ```coldist()```, coverts the JND values into relative coordinates amongst all egg backgrounds using ```jnd2xyz()```, and plots the JND-XYZ coordinates.
 
 **The main difference between this script and the previous one (_R_scripts/02A_model_eggs_JND.R_) is the use of a ```list()``` to separate egg background and spotting spectra while keeping them as a single list object. This is especially useful in cases where the reflectance spectra data should be analyzed separately in RNL models ```coldist()```--i.e. when spectra are to be compared within groups, but not between them. Different functions are applied to each list item using ```lapply(x, function(x))```.**

@@ -33,7 +33,7 @@ run ```git pull``` to keep up to date files and scripts from GitHub main repo
 ## Using the examples to practice visual modeling analysis
 1. Once the container is active and running, open the RStudio instance in your web browser and open the directory *example_murreegg_analysis* in the RStudio Files panel
 2. Next, open *example_murreegg_analysis.Rproj* to enter the example R project
-3. Open example_murreegg_analysis/Rscripts to see the available R scripts
+3. Open *example_murreegg_analysis/notebook/analysis_notebook.html* in a web broswer to see analysis walkthrough
 4. Run scripts by the order of their names--e.g., *01_import_and_clean_egg_spectra.R*, then *02_model_egg_JNDs.R*...
 
 ## Helpful docs and tutorials
