@@ -31,5 +31,6 @@
     "posix_terminal_shell": "bash",
     "restore_source_documents": false,
     "restore_last_project": false,
-    "editor_theme": "Dracula"
+    "editor_theme": "Dracula",
+    "jobs_tab_visibility": "shown"
 }

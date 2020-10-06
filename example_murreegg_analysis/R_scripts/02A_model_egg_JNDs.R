@@ -10,7 +10,7 @@ iceland_murre_egg_spectra <-
     )
   )
 
-# Split data by background color and spot color ---------------------------
+# Subset egg reflectance spectra ---------------------------
 
 # Get egg background color spectra only
 egg_bkg_spectra <-
@@ -113,7 +113,6 @@ egg_background_JNDXYZ <-
 pdf("figures/jnd_xyz_plot_egg_background.pdf")
 
 # make 3D JND-XYZ plot
-JNDXYZ_plot<-
 egg_background_JNDXYZ %>% 
     jndplot(
       x = .,

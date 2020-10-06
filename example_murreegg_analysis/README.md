@@ -6,5 +6,6 @@
 ## Using the examples to practice visual modeling analysis
 1. Once the container is active and running, open the RStudio instance in your web browser and open the directory *example_murreegg_analysis* in the RStudio Files panel
 2. Next, open *example_murreegg_analysis.Rproj* to enter the example R project
-3. Open example_murreegg_analysis/Rscripts to see the available R scripts
-4. Run scripts by the order of their names--e.g., *01_import_and_clean_egg_spectra.R*, then *02_model_egg_JNDs.R*...
+3. Open *notebook/analysis_notebook.html* with a web browser to view a walkthrough of the analysis scripts.
+4. Open example_murreegg_analysis/Rscripts to see the available R scripts
+5. Run scripts by the order of their names--e.g., *01_import_and_clean_egg_spectra.R*, then *02_model_egg_JNDs.R*...
