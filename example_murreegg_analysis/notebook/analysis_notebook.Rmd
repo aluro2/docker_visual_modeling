@@ -1,0 +1,353 @@
+---
+title: "Receptor-noise limited modeling and JND-XYZ plotting"
+author: Alec Luro
+date: October 6, 2020
+output:
+  prettydoc::html_pretty:
+    theme: leonids
+    highlight: github
+---
+```{r setup_chunk, echo=FALSE}
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+```
+
+
+All scripts are available in the *R_scripts* directory. Scripts should be run in the order of their names.
+
+**Pipes ``` %>% ```**
+
+As you will see, I use a mix of direct inputs (e.g. ```object_A <- function_A(x)```, and then ```object_B <- function_B(object_A)```) and pipes ```object_B <- x %>% function_A(.) %>% function_B(.)``` throughout. Pipes can be convenient as they reduce the number of objects saved into the global environment by skipping through intermediate outputs and returning only the output generated following the last pipe. The object send by the pipe can be indicated using a period placeholder ```.``` but may also lack any placeholder at all as the pipe will always send the object to the next function's object input.
+
+# R_scripts/01_import_and_clean_egg_spectra.R
+This script imports the raw reflectance data, processes it, and saves it. The plot is added here in the notebook to demonstrate how to make a basic spectral reflectance plot.
+
+## Load packages and import the reflectance data
+```{r echo=T, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(pavo)
+
+## get egg reflectance spectra, smooth lines and add correction to negative values
+iceland_murre_egg_spectra <-
+  # import raw reflectance data from "data/" directory
+  as.rspec(
+    read_csv("data/iceland_murre_eggs_spectra.csv")
+  ) %>%
+  # process the reflectance spectra
+  procspec(
+    # smooth reflectance spectra data by a span of 0.25
+    opt = "smooth",
+    span = 0.25,
+    # replace any negative reflectance values with 0
+    fixneg = "zero"
+  )
+
+```
+
+## Plot cleaned reflectance spectra
+Our murre egg reflectance data are now available as cleaned, smoothed spectra.
+```{r results=TRUE, warning=FALSE, message=FALSE}
+plot(
+  iceland_murre_egg_spectra,
+  col = spec2rgb(iceland_murre_egg_spectra),
+  lwd = 3,
+  main = "Cleaned murre egg reflectance spectra")
+```
+## Save cleaned reflectance spectra
+```{r warning=FALSE, message=FALSE}
+write_csv(
+  iceland_murre_egg_spectra,
+  "data/iceland_murre_eggs_spectra_cleaned.csv"
+)
+```
+
+# R_scripts/02A_model_egg_JNDs.R
+This script takes the cleaned murre egg reflectance data, subsets only spectra taken of egg backgrounds, coverts it to cone catch data using the peafowl visual system using ```vismodel()```, calculates Just-noticeable differences (JNDs) using ```coldist()```, coverts the JND values into relative coordinates amongst all egg backgrounds using ```jnd2xyz()```, and plots the JND-XYZ coordinates.
+
+## Import cleaned murre egg reflectance data from "data/" directory
+```{r warning=FALSE, message=FALSE}
+# import cleaned murre egg reflectance data from "data/" directory
+iceland_murre_egg_spectra <-
+  read_csv(
+      "data/iceland_murre_eggs_spectra_cleaned.csv"
+    ) %>% 
+  as.rspec(.)
+```
+
+## Subset only the egg background reflectance spectra
+```{r warning=FALSE, message=FALSE}
+# Get egg background color spectra only
+egg_bkg_spectra <-
+  subset(x = iceland_murre_egg_spectra, subset = "background")
+```
+
+## Run a visual model using the peafowl visual system, get JND values, and save output
+```{r warning=FALSE, message=FALSE}
+egg_background_JNDs <-
+  # pipe ("%>%" ) reflectance spectra data "vismodel" quantum catch calculation function
+  egg_bkg_spectra %>%
+      # Get photoreceptor cone catch, assuming Murres have a violet-sensitive SWS1 cone: https://doi.org/10.1098/rsbl.2009.0877
+      vismodel(
+        # The period "." is a placeholder for the piped object ("egg_bkg_spectra")
+        rspecdata = .,
+        # peafowl VS-type visual system
+        visual = "pfowl",
+        # bright mid-day sunlight irradiance spectrum
+        illum = "D65",
+        # ideal (flat grey) background which [murre egg] objects are viewed against
+        bkg = "ideal",
+        # ideal ocular media transmission (100% transmission across all light wavelengths)
+        trans = "ideal",
+        # use chicken double-cone for achromatic perception
+        achromatic = "ch.dc",
+        # apply a Von-Kries correction (i.e., assume color constancy in response to environmental lighting)
+        vonkries = T,
+        # set cone catches to relative to one another for receptor-noise limited modeling 
+        relative = F
+      ) %>%
+  # next, we pipe the calculated cone quantum catches into a "rename" column function to change VS cone name to "v" instead of "u"
+      rename(
+        .data = .,
+        "v" = "u"
+      ) %>%
+  # finally, pipe the cone quantum catch values into RNL-modeling function "coldist"
+      # get JND values from a receptor-noise limited model
+      coldist(
+        modeldata = .,
+        # assume "neural" noise affects photoreception
+        noise = "neural",
+        # include calculation of achromatic JNDs
+        achro = T,
+        # set photoreceptor density ratios to (default Pekin robin): VS=1, MWS=2, LWS=2, double-cone=4 
+        n = c(1, 2, 2, 4),
+        # set weber noise fraction to 0.1
+        weber = 0.1,
+        # use the LWS cone as the reference for the weber fraction
+        weber.ref = "longest"
+      )
+
+# Save the calculated JND values as .csv
+write_csv(egg_background_JNDs, path = "data/egg_background_JNDs.csv")
+
+# Also save as .rds--this preserves the format that pavo uses for jndxyz(). jndxyz will NOT work if egg_background_JNDs is changed in any way (i.e., the .csv file won't work)
+saveRDS(egg_background_JNDs, file = "data/egg_background_JNDs.rds")
+```
+
+## Get JND XYZ coordinates
+```{r warning=FALSE, message=FALSE}
+# Get JND data
+egg_background_JNDs <-
+  read_rds(path = "data/egg_background_JNDs.rds") 
+
+# pipe JND data into jnd2xyz function
+egg_background_JNDXYZ <-
+  egg_background_JNDs %>% 
+      jnd2xyz(
+        coldistres = .,
+        rotate = T,
+        # center the data onto the "mean" JND XYZ value
+        center = T,
+        rotcenter = "mean",
+        # flip the axes by the LWS "l"and VS "v" cone coordinates
+        ref1 = "l",
+        ref2 = "v",
+        # rotate the plot
+        axis1 = c(1, 1, 0),
+        axis2 = c(0, 0, 1)
+      )
+  
+# Save the JND-XYZ values as .csv and .rds files
+egg_background_JNDXYZ %>% 
+    rownames_to_column(., "egg_ID")%>%
+    # rename the JND xyz value column names
+    rename("JND_X" = "x", "JND_Y" = "y", "JND_Z" = "z", "Luminance" = "lum") %>% 
+  # output as a .csv file
+  write_csv(., "data/egg_background_JNDXYZ.csv")
+
+# Again, also save as .rds for other pavo functions to work
+  saveRDS(egg_background_JNDXYZ, "data/egg_background_JNDXYZ.rds")
+  
+```
+
+## Make a 3D JND-XYZ plot
+The plot generated here is for demonstration. A publication-quality pdf is made using the R-scripts. The lines necessary to generate a pdf of the figure are ignored here. Note that the violet cone is incorrectly labeled by "U" ("ultraviolet"). This is a bug in the ```jndplot()``` function that I have not found a solution for yet. 
+```{r warning=FALSE, message=FALSE}
+# import JND-XYZ data  
+egg_background_JNDXYZ <-
+    read_rds("data/egg_background_JNDXYZ.rds")
+
+## Make a pdf save file in "figures/" directory named "jnd_xyz_plot_egg_background.pdf"
+#pdf("figures/jnd_xyz_plot_egg_background.pdf")
+
+# make 3D JND-XYZ plot
+egg_background_JNDXYZ %>% 
+    jndplot(
+      x = .,
+      arrow = "relative",
+      arrow.p = 2,
+      arrow.col = "blue",
+      # color points using RGG colors derived from egg bkg reflectance spectra
+      col = spec2rgb(egg_bkg_spectra),
+      margin = c(1, 3, 1, 0),
+      cex = 1.5,
+      square = F,
+      xlab = "JND-X",
+      ylab = "JND-Y",
+      zlab = "JND-Z"
+    )
+
+# Add a title and position it 2 lines down from top of page
+    title(
+      main = "Murre egg background color"
+    )
+
+# close the pdf file to save it
+#dev.off()
+
+```
+
+# R_scripts/02B_model_egg_JNDs.R
+This script takes the cleaned murre egg reflectance data, splits egg background and egg spotting reflectance spectra into two items of a list, coverts them to cone catch data using the peafowl visual system using ```vismodel()```, calculates Just-noticeable differences (JNDs) using ```coldist()```, coverts the JND values into relative coordinates amongst all egg backgrounds using ```jnd2xyz()```, and plots the JND-XYZ coordinates.
+
+**The main difference between this script and the previous one (_R_scripts/02A_model_eggs_JND.R_) is the use of a ```list()``` to separate egg background and spotting spectra while keeping them as a single list object. This is especially useful in cases where the reflectance spectra data should be analyzed separately in RNL models ```coldist()```--i.e. when spectra are to be compared within groups, but not between them. Different functions are applied to each list item using ```lapply(x, function(x))```.**
+
+## Import reflectance data and create a list of egg background and spotting reflectance
+Reflectance data as single dataset
+```{r message=FALSE, warning=FALSE}
+# Show original murre egg reflectance rspec data
+iceland_murre_egg_spectra[1:3, 1:4]
+```
+
+Split list of reflectance dataset.
+```{r warning=FALSE, message=FALSE}
+# Separate spectra into list of length 2, one for egg "background" and one for egg spotting ("spot")
+egg_spectra_split <-
+  list(
+    egg_background = subset(iceland_murre_egg_spectra, "background"),
+    egg_spot = subset(iceland_murre_egg_spectra, "spot")
+  )
+# Show split list murre egg reflectance data
+lapply(egg_spectra_split, function(x) x[1:3,1:4])
+```
+
+## Run visual model on listed data
+```{r warning=FALSE, message=FALSE}
+egg_JNDs_split <-
+  # pipe reflectance spectra data list into list-apply ("lapply") function
+  egg_spectra_split %>%
+  lapply(
+    .,
+    function(x) {
+      # Get photoreceptor cone catch, assuming Murres have a violet-sensitive SWS1 cone: https://doi.org/10.1098/rsbl.2009.0877
+      vismodel(
+        x,
+        # peafowl VS-type visual system
+        visual = "pfowl",
+        # bright mid-day sunlight irradiance spectrum
+        illum = "D65",
+        # ideal (flat grey) background which [murre egg] objects are viewed against
+        bkg = "ideal",
+        # ideal ocular media transmission (100% transmission across all light wavelengths)
+        trans = "ideal",
+        # use chicken double-cone for achromatic perception
+        achromatic = "ch.dc",
+        # apply a Von-Kries correction (i.e., assume color constancy in response to environmental lighting)
+        vonkries = T,
+        # set cone catches to relative to one another for receptor-noise limited modeling 
+        relative = F
+      )
+    }
+  ) %>%
+  # pipe the calculated cone quantum catches into a list-apply to change VS cone name to "v" instead of "u"
+  lapply(
+    .,
+    function(x) {
+      rename(
+        x,
+        "v" = "u"
+      )
+    }
+    # pipe the cone quantum catch values into list-apply of RNL-modeling function "coldist"
+  ) %>%
+  lapply(
+    .,
+    function(x) {
+      # get JND values from a receptor-noise limited model
+      coldist(
+        x,
+        # assume "neural" noise affects photoreception
+        noise = "neural",
+        # include calculation of achromatic JNDs
+        achro = T,
+        # set photoreceptor density ratios to (default Pekin robin): VS=1, MWS=2, LWS=2, double-cone=4 
+        n = c(1, 2, 2, 4),
+        # set weber noise fraction to 0.1
+        weber = 0.1,
+        # use the LWS cone as the reference for the weber fraction
+        weber.ref = "longest"
+      )
+    }
+    # pipe calculated JND values into list-apply function to get JND XYZ values
+  ) %>%
+  lapply(
+    .,
+    function(x) {
+      jnd2xyz(
+        x,
+        rotate = T,
+        # center the data onto the "mean" JND XYZ value
+        center = T,
+        rotcenter = "mean",
+        # flip the axes by the LWS "l"and VS "v" cone coordinates
+        ref1 = "l",
+        ref2 = "v",
+        # rotate the plot
+        axis1 = c(1, 1, 0),
+        axis2 = c(0, 0, 1)
+      )
+    }
+  )
+
+```
+
+## Make 3D JND-XYZ plots for both egg background and egg spotting
+Again, the code to generate a pdf of the plot is ignored here. 
+```{r warning=FALSE, message=FALSE}
+## Make a pdf save file in "figures/" directory named "jnd_xyz_plots.pdf"
+#pdf("figures/jnd_xyz_plots.pdf")
+
+# multiple list-apply ("mapply") the jndplot function to both list items
+mapply(
+  function(x, y, z) {
+    jndplot(
+      x,
+      arrow = "relative",
+      arrow.p = 2,
+      arrow.col = "blue",
+      col = spec2rgb(y),
+      margin = c(1, 3, 1, 0),
+      cex = 1.5,
+      square = F,
+      xlab = "JND-X",
+      ylab = "JND-Y",
+      zlab = "JND-Z"
+    )
+
+    title(
+      main = z
+    )
+  },
+  # x = the list of JND dataframes (murre egg background and egg spotting JNDs)
+  x = egg_JNDs_split,
+  # y = the reflectance spectra data used to color the points in the 3D JND plot using "spec2rgb()"
+  y = egg_spectra_split,
+  # z = the titles for each 3D JND  plot 
+  z = c("Murre egg backgrounds", "Murre egg spots")
+)
+
+# close the pdf file to save it
+#dev.off()
+
+```
+
