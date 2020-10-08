@@ -41,3 +41,6 @@ vignettes/*.pdf
 # Rstudio files
 .rstudio
 .local
+
+# Local R analyses
+analyses/*
